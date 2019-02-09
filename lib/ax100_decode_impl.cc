@@ -31,27 +31,34 @@
 
 extern "C" {
 #include <fec.h>
+#include "randomizer.h"
 }
 
 namespace gr {
   namespace satellites {
 
     ax100_decode::sptr
-    ax100_decode::make(bool verbose)
+    ax100_decode::make(bool verbose, bool length_field, bool ccsds_descramble, int discard_trailing_bytes)
     {
       return gnuradio::get_initial_sptr
-        (new ax100_decode_impl(verbose));
+        (new ax100_decode_impl(verbose, length_field, ccsds_descramble, discard_trailing_bytes));
     }
 
     /*
      * The private constructor
      */
-    ax100_decode_impl::ax100_decode_impl(bool verbose)
+    ax100_decode_impl::ax100_decode_impl(bool verbose, bool length_field, bool ccsds_descramble, int discard_trailing_bytes)
       : gr::block("ax100_decode",
 	      gr::io_signature::make(0, 0, 0),
 	      gr::io_signature::make(0, 0, 0))
     {
       d_verbose = verbose;
+      d_length_field = length_field;
+      d_discard_trailing_bytes = discard_trailing_bytes;
+      d_ccsds_descramble = ccsds_descramble;
+      if (d_ccsds_descramble) {
+	ccsds_generate_sequence(d_ccsds_sequence, 255);
+      }
 
       message_port_register_out(pmt::mp("out"));
       message_port_register_in(pmt::mp("in"));
@@ -86,7 +93,9 @@ namespace gr {
     ax100_decode_impl::msg_handler (pmt::pmt_t pmt_msg) {
       pmt::pmt_t msg = pmt::cdr(pmt_msg);
       uint8_t data[256];
+      uint8_t *data_start_ptr;
       int data_len;
+      int rs_len;
       uint8_t tmp;
       int rs_res;
       int frame_len;
@@ -94,21 +103,37 @@ namespace gr {
 
       data_len = std::min(pmt::length(msg), sizeof(data));
       memcpy(data, pmt::uniform_vector_elements(msg, offset), data_len);
-
-      rs_res = decode_rs_8(data + 1, NULL, 0, 255 - data[0] + 1);
+      
+      data_start_ptr = data;
+      rs_len = std::min(data_len, 255);
+      if (d_length_field) {
+	data_start_ptr = data+1;
+	rs_len = data[0]-1;
+      }
+      
+      if (d_ccsds_descramble) {
+	ccsds_xor_sequence(data_start_ptr, d_ccsds_sequence, rs_len);
+      }
+      
+      rs_res = decode_rs_8(data_start_ptr, NULL, 0, 255 - rs_len);
 
       // Send via GNUradio message if RS ok
       if (rs_res >= 0) {
 	// Swap CSP header
-	tmp = data[4];
-	data[4] = data[1];
-	data[1] = tmp;
-	tmp = data[3];
-	data[3] = data[2];
-	data[2] = tmp;
+	tmp = data_start_ptr[3];
+	data_start_ptr[3] = data_start_ptr[0];
+	data_start_ptr[0] = tmp;
+	tmp = data_start_ptr[2];
+	data_start_ptr[2] = data_start_ptr[1];
+	data_start_ptr[1] = tmp;
 
-	// 32 RS parity symbols, 1 includes the length byte
-	frame_len = data[0] - 32 - 1;
+	if (d_length_field) {
+	  // 32 RS parity symbols, 1 includes the length byte
+	  frame_len = data[0] - 32 - 1 - d_discard_trailing_bytes;
+	} else {
+	  // 32 RS parity symbols
+	  frame_len = data_len - 32 - d_discard_trailing_bytes;
+	}
 
 	if (d_verbose) {
 	  std::printf("RS decode OK. Length: %d. Bytes corrected: %d.\n", frame_len, rs_res);
@@ -117,7 +142,7 @@ namespace gr {
 	// Send by GNUradio message
 	message_port_pub(pmt::mp("out"),
 			 pmt::cons(pmt::PMT_NIL,
-				   pmt::init_u8vector(frame_len,data+1)));
+				   pmt::init_u8vector(frame_len,data_start_ptr)));
       }
       else if (d_verbose) {
 	std::printf("RS decode failed.\n");

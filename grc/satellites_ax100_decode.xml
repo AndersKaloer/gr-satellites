@@ -4,7 +4,7 @@
   <key>satellites_ax100_decode</key>
   <category>[Satellites]/GOMspace</category>
   <import>import satellites</import>
-  <make>satellites.ax100_decode($verbose)</make>
+  <make>satellites.ax100_decode($verbose, $length_field, $ccsds_descramble, $discard_trailing_bytes)</make>
   <param>
     <name>Verbose</name>
     <key>verbose</key>
@@ -17,6 +17,40 @@
        <name>No</name>
        <key>False</key>
      </option>
+  </param>
+  <param>
+    <name>Contains length field</name>
+    <key>length_field</key>
+    <value>True</value>
+    <type>bool</type>
+     <option>
+       <name>Yes</name>
+       <key>True</key>
+     </option>
+     <option>
+       <name>No</name>
+       <key>False</key>
+     </option>
+  </param>
+  <param>
+    <name>CCSDS descramble</name>
+    <key>ccsds_descramble</key>
+    <value>True</value>
+    <type>bool</type>
+     <option>
+       <name>Yes</name>
+       <key>True</key>
+     </option>
+     <option>
+       <name>No</name>
+       <key>False</key>
+     </option>
+  </param>
+  <param>
+    <name>Discard trailing bytes</name>
+    <key>discard_trailing_bytes</key>
+    <value>0</value>
+    <type>int</type>
   </param>
 
   <sink>

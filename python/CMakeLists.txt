@@ -110,6 +110,8 @@ GR_PYTHON_INSTALL(
     check_astrocast_crc.py
     lume1_telemetry_parser.py
     lume1_telemetry.py
+    delphini1_beacon_parser.py
+    delphini1_beacon.py
     ecss_pus.py
     ccsds_space_packet.py
     DESTINATION ${GR_PYTHON_DIR}/satellites

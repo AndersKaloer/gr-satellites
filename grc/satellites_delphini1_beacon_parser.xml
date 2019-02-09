@@ -1,0 +1,12 @@
+<?xml version="1.0"?>
+<block>
+  <name>Delphini-1 Beacon Parser</name>
+  <key>satellites_delphini_beacon_parser</key>
+  <category>[Satellites]/Telemetry</category>
+  <import>import satellites</import>
+  <make>satellites.delphini1_beacon_parser()</make>
+  <sink>
+    <name>in</name>
+    <type>message</type>
+  </sink>
+</block>

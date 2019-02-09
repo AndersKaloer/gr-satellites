@@ -30,9 +30,13 @@ namespace gr {
     {
      private:
       bool d_verbose;
+      bool d_length_field;
+      bool d_ccsds_descramble;
+      int d_discard_trailing_bytes;
+      char d_ccsds_sequence[255];
 
      public:
-      ax100_decode_impl(bool verbose);
+      ax100_decode_impl(bool verbose, bool length_field, bool ccsds_descramble, int discard_trailing_bytes);
       ~ax100_decode_impl();
 
       // Where all the action really happens

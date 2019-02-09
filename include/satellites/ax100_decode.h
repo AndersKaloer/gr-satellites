@@ -46,7 +46,7 @@ namespace gr {
        * class. satellites::ax100_decode::make is the public interface for
        * creating new instances.
        */
-      static sptr make(bool verbose);
+      static sptr make(bool verbose, bool length_field, bool ccsds_descramble, int discard_trailing_bytes);
     };
 
   } // namespace satellites
